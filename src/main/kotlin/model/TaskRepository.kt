@@ -1,13 +1,18 @@
 package com.example.model
 
-class TaskRepository {
-    val tasks = mutableListOf(
-        Task("cleaning", "Clean the house", Priority.Low),
-        Task("gardening", "Mow the lawn", Priority.Medium),
-        Task("shopping", "Buy the groceries", Priority.High),
-        Task("painting", "Paint the fence", Priority.Medium)
-    )
-
+interface TaskRepository {
     // fetch all tasks
-    fun getAllTasks(): List<Task> = tasks
+    fun getAllTasks(): List<Task>
+
+    // POST a task
+    fun addTask(task: Task)
+
+    // GET task by name
+    fun byName(name: String): Task?
+
+    // GET task by priority
+    fun byPriority(priority: Priority): List<Task>
+
+    // DELETE a task
+    fun removeTask(name: String): Boolean
 }
