@@ -14,6 +14,10 @@ fun Application.configureRouting() {
     val repository = FakeTaskRepository()
 
     routing {
+        get("/") {
+            call.respondText("Hello World!", ContentType.Text.Plain)
+        }
+
         // GET all tasks
         get("/tasks") {
             val allTasks = repository.getAllTasks()
