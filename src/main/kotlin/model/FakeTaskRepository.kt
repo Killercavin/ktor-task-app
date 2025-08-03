@@ -6,7 +6,7 @@ class FakeTaskRepository : TaskRepository {
         Task("gardening", "Mow the lawn", Priority.Medium),
         Task("shopping", "Buy the groceries", Priority.High),
         Task("painting", "Paint the fence", Priority.Medium),
-        Task("deleting", "Delete a house", Priority.Vital)
+        Task("deleting", "Delete a house", Priority.High)
     )
 
     override fun getAllTasks(): List<Task> = tasks
