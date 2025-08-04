@@ -1,31 +1,59 @@
-package com.example.plugins
+package com.example.routes
 
-import com.example.model.FakeTaskRepository
+import com.example.model.PostgresTaskRepository
 import com.example.model.Priority
 import com.example.model.Task
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Application.configureRouting() {
+fun Route.taskRoute() {
+    val repository = PostgresTaskRepository()
 
-    val repository = FakeTaskRepository()
-
-    routing {
-        get("/") {
-            call.respondText("Hello World!", ContentType.Text.Plain)
-        }
+    route("/tasks") {
 
         // GET all tasks
-        get("/tasks") {
+        get {
             val allTasks = repository.getAllTasks()
             call.respond(HttpStatusCode.OK, allTasks)
         }
 
+        // POST a new task
+        post {
+            val task = call.receive<Task>()
+
+            if (task.name.isBlank()) {
+                call.respond(HttpStatusCode.BadRequest, "Name is required")
+                return@post
+            }
+            if (task.description.isBlank()) {
+                call.respond(HttpStatusCode.BadRequest, "Description is required")
+                return@post
+            }
+            // Redundant, but good for extra safety or better error handling
+            // ISSUE
+            if (task.priority.name.isBlank()) {
+                call.respond(HttpStatusCode.BadRequest, "Priority is required")
+                return@post
+            }
+
+            if (repository.byName(task.name) != null) {
+                call.respond(HttpStatusCode.Conflict, "Task with that name already exists")
+                return@post
+            }
+
+            try {
+                repository.addTask(task)
+                call.respond(HttpStatusCode.Created, task)
+            } catch (e: ContentTransformationException) {
+                call.respond(HttpStatusCode.BadRequest, "Invalid request body")
+                return@post
+            }
+        }
+
         // GET a task by name
-        get("/tasks/name/{name?}") {
+        get("/name/{name?}") {
             val parameterName = call.parameters["name"]
             if (parameterName == null) {
                 call.respond(HttpStatusCode.BadRequest, "Missing task name parameter")
@@ -42,7 +70,7 @@ fun Application.configureRouting() {
         }
 
         // GET task(s) by priority
-        get("/tasks/priority/{priority?}") {
+        get("/priority/{priority?}") {
             val parameterPriority = call.parameters["priority"]
             if (parameterPriority == null) {
                 call.respond(HttpStatusCode.BadRequest, "Missing priority parameter")
@@ -65,35 +93,8 @@ fun Application.configureRouting() {
             call.respond(HttpStatusCode.OK, tasks)
         }
 
-        // POST a new task
-        post("/tasks") {
-            val task = try {
-                call.receive<Task>()
-            } catch (e: ContentTransformationException) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid request body")
-                return@post
-            }
-
-            if (task.name.isBlank()) {
-                call.respond(HttpStatusCode.BadRequest, "Name is required")
-                return@post
-            }
-            if (task.description.isBlank()) {
-                call.respond(HttpStatusCode.BadRequest, "Description is required")
-                return@post
-            }
-            // Redundant, but good for extra safety or better error handling
-            if (!Priority.entries.contains(task.priority)) {
-                call.respond(HttpStatusCode.BadRequest)
-                return@post
-            }
-
-            repository.addTask(task)
-            call.respond(HttpStatusCode.Created, task)
-        }
-
         // DELETE a task by name
-        delete("/tasks/delete/{name?}") {
+        delete("/delete/{name?}") {
             val name = call.parameters["name"]
             if (name == null) {
                 call.respond(HttpStatusCode.BadRequest, "Missing task name parameter")
